@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Todo App</title>
+  <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    .completed {
+      text-decoration: line-through;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container mt-5">
+  <h2>Todo App</h2>
+  <form id="taskForm">
+    <div class="form-group">
+      <label for="taskTitle">Task Title:</label>
+      <input type="text" class="form-control" id="taskTitle" required>
+    </div>
+    <div class="form-group">
+      <label for="dueDate">Due Date:</label>
+      <input type="date" class="form-control" id="dueDate" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Add Task</button>
+  </form>
+
+  <div id="taskList" class="mt-4">
+    <!-- Tasks will be displayed here -->
+  </div>
+
+  <div class="mt-5">
+    <h3>Completed Tasks</h3>
+    <div id="completedTasks">
+      <!-- Completed tasks will be displayed here -->
+    </div>
+  </div>
+</div>
+
+<!-- Edit Task Modal -->
+<div class="modal fade" id="editTaskModal" tabindex="-1" role="dialog" aria-labelledby="editTaskModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="editTaskModalLabel">Edit Task</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="editTaskForm">
+          <div class="form-group">
+            <label for="editTaskTitle">Task Title:</label>
+            <input type="text" class="form-control" id="editTaskTitle" required>
+          </div>
+          <div class="form-group">
+            <label for="editDueDate">Due Date:</label>
+            <input type="date" class="form-control" id="editDueDate" required>
+          </div>
+          <input type="hidden" id="editTaskIndex">
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script>
+  // Retrieve tasks from local storage or initialize an empty array
+  let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+
+  // Function to save tasks to local storage
+  function saveTasks() {
+    localStorage.setItem('tasks', JSON.stringify(tasks));
+  }
+
+  // Function to display tasks
+  function displayTasks() {
+    const taskList = document.getElementById('taskList');
+    taskList.innerHTML = '';
+
+    const completedTasksList = document.getElementById('completedTasks');
+    completedTasksList.innerHTML = '';
+
+    if (tasks.length === 0) {
+      taskList.innerHTML = '<p>Welcome! Add your first task.</p>';
+      return;
+    }
+
+    tasks.forEach((task, index) => {
+      const taskItem = document.createElement('div');
+      taskItem.classList.add('mb-2');
+
+      const taskTitle = document.createElement('span');
+      taskTitle.textContent = task.title;
+      if (task.completed) {
+        taskTitle.classList.add('completed');
+      }
+
+      const dueDate = document.createElement('span');
+      dueDate.textContent = ` - Due Date: ${task.dueDate}`;
+
+      const editButton = document.createElement('button');
+      editButton.textContent = 'Edit';
+      editButton.classList.add('btn', 'btn-sm', 'btn-primary', 'ml-2');
+      editButton.setAttribute('data-index', index);
+      editButton.addEventListener('click', openEditModal);
+
+      const deleteButton = document.createElement('button');
+      deleteButton.textContent = 'Delete';
+      deleteButton.classList.add('btn', 'btn-sm', 'btn-danger', 'ml-2');
+      deleteButton.setAttribute('data-index', index);
+      deleteButton.addEventListener('click', deleteTask);
+
+      const completeButton = document.createElement('button');
+      completeButton.textContent = task.completed ? 'Mark Incomplete' : 'Mark Complete';
+      completeButton.classList.add('btn', 'btn-sm', 'btn-success', 'ml-2');
+      completeButton.setAttribute('data-index', index);
+      completeButton.addEventListener('click', toggleComplete);
+
+      taskItem.appendChild(taskTitle);
+      taskItem.appendChild(dueDate);
+      taskItem.appendChild(editButton);
+      taskItem.appendChild(deleteButton);
+      taskItem.appendChild(completeButton);
+
+      if (task.completed) {
+        completedTasksList.appendChild(taskItem);
+      } else {
+        taskList.appendChild(taskItem);
+      }
+    });
+  }
+
+  // Function to add a new task
+  function addTask(title, dueDate) {
+    tasks.push({ title, dueDate, completed: false });
+    saveTasks();
+    displayTasks();
+  }
+
+  // Function to delete a task
+  function deleteTask(event) {
+    const index = event.target.getAttribute('data-index');
+    tasks.splice(index, 1);
+    saveTasks();
+    displayTasks();
+  }
+
+  // Function to open edit modal
+  function openEditModal(event) {
+    const index = event.target.getAttribute('data-index');
+    const task = tasks[index];
+    document.getElementById('editTaskTitle').value = task.title;
+    document.getElementById('editDueDate').value = task.dueDate;
+    document.getElementById('editTaskIndex').value = index;
+    $('#editTaskModal').modal('show');
+  }
+
+  // Function to edit a task
+  function editTask(title, dueDate, index) {
+    tasks[index].title = title;
+    tasks[index].dueDate = dueDate;
+    saveTasks();
+    displayTasks();
+    $('#editTaskModal').modal('hide');
+  }
+
+  // Function to toggle task completion status
+  function toggleComplete(event) {
+    const index = event.target.getAttribute('data-index');
+    tasks[index].completed = !tasks[index].completed;
+    saveTasks();
+    displayTasks();
+  }
+
+  // Event listener for task form submission
+  document.getElementById('taskForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+    const title = document.getElementById('taskTitle').value;
+    const dueDate = document.getElementById('dueDate').value;
+    addTask(title, dueDate);
+    document.getElementById('taskForm').reset();
+  });
+
+  // Event listener for edit task form submission
+  document.getElementById('editTaskForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+    const title = document.getElementById('editTaskTitle').value;
+    const dueDate = document.getElementById('editDueDate').value;
+    const index = document.getElementById('editTaskIndex').value;
+    editTask(title, dueDate, index);
+  });
+
+  // Initial display of tasks
+  displayTasks();
+</script>
+
+</body>
+</html>
